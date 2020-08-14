@@ -1,0 +1,93 @@
+#define  F_CPU 16000000UL
+#include <util/delay.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <avr/sfr_defs.h>
+
+unsigned int k=0;
+unsigned char led[13]={0xC0,0xF9,0xA4,0xB0,0x99,0x92,0x82,0xF8,0x80,0x90,0x9C,0xC6,0b01110001};
+int adc_val;
+void hienthi(int x)
+{
+	uint16_t  temp , c ,dv;
+	if(k==0)
+	{
+		temp = x;
+	}
+	if(k==1)
+	{
+		temp = x*1.8+32;
+	}
+	
+	c = temp/10;
+	dv = temp - (c*10);
+	
+	for (int i=0;i<20;i++)
+	{
+		PORTD = 0x00;
+		PORTD = (1<<PIND0);
+		PORTC = led[c];
+		_delay_ms(5);
+		
+		PORTD = 0x00;
+		PORTD = (1<<PIND1);
+		PORTC = led[dv];
+		_delay_ms(5);
+		
+		PORTD = 0x00;
+		PORTD = (1<<PIND2);
+		PORTC = led[10];
+		_delay_ms(5);
+		if (i==0)
+		{
+			PORTD = 0x00;
+			PORTD = (1<<PIND3);
+			PORTC = led[11];
+			_delay_ms(5);
+		}
+		else
+		{
+			PORTD = 0x00;
+			PORTD = (1<<PIND3);
+			PORTC = led[12];
+			_delay_ms(5);
+		}
+	}
+}
+
+
+ 
+uint16_t read_adc(unsigned int kenh_adc)
+{
+	ADMUX = kenh_adc|(1<<REFS0);
+	ADCSRA |=(1<<ADSC);
+	loop_until_bit_is_set(ADCSRA,ADIF);
+	return ADCW;
+	
+}
+int main(void)
+{
+    ADMUX |=(1<<REFS0);
+	ADCSRA |=(1<<ADEN)|(1<<ADPS1)|(1<<ADPS0);
+	DDRC = 0xFF;
+	DDRD  |=(1<<PIND0)|(1<<PIND1)|(1<<PIND2)|(1<<PIND3);
+	GICR =(1<<INT2);
+	MCUCSR =(1<<ISC2);
+	sei();
+	
+    while (1) 
+    {
+		if (k==2);
+		{
+			k=0;
+		}
+	adc_val = (int)(read_adc(0)/3.14);
+	hienthi(adc_val);
+    }
+	
+}
+ISR(INT0_vect)
+{
+	k++;
+}
+
